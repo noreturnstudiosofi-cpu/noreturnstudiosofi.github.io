@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NoreTurn Studio's | Just Run — Escapa del Fin del Mundo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Barlow+Condensed:ital,wght@0,300;0,400;0,600;0,700;0,900;1,700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+
+:root{
+  --bg:#030202;
+  --bg2:#070303;
+  --surface:#0e0505;
+  --surface2:#160707;
+  --border:#2a1010;
+  --border2:#3d1515;
+  --red:#e53030;
+  --red2:#ff3d3d;
+  --red-dim:#8b1a1a;
+  --orange:#f07020;
+  --orange2:#ff8c38;
+  --yellow:#ffb830;
+  --text:#f0e6e0;
+  --text2:#9a8880;
+  --text3:#5a4840;
+  --mono:'Share Tech Mono',monospace;
+  --display:'Black Han Sans',sans-serif;
+  --body:'Barlow Condensed',sans-serif;
+  --glow-r:0 0 30px rgba(229,48,48,.5),0 0 80px rgba(229,48,48,.2);
+  --glow-o:0 0 30px rgba(240,112,32,.5),0 0 80px rgba(240,112,32,.2);
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--body);
+  overflow-x:hidden;
+  cursor:none;
+}
+
+/* CURSOR */
+#cursor{position:fixed;z-index:99999;pointer-events:none;top:0;left:0}
+#cursor-dot{width:6px;height:6px;background:var(--red2);border-radius:50%;position:absolute;transform:translate(-50%,-50%)}
+#cursor-ring{width:36px;height:36px;border:1px solid rgba(229,48,48,.5);border-radius:50%;position:absolute;transform:translate(-50%,-50%);transition:width .2s,height .2s,border-color .2s}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--red),var(--orange))}
+
+/* BG CANVAS */
+#canvas-bg{position:fixed;inset:0;z-index:0;opacity:.55}
+
+/* NOISE */
+body::after{
+  content:'';position:fixed;inset:0;z-index:1;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:.025;pointer-events:none
+}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 3rem;height:64px;
+  transition:background .4s,border-color .4s;
+  border-bottom:1px solid transparent;
+}
+nav.scrolled{background:rgba(3,2,2,.96);border-color:var(--border);backdrop-filter:blur(12px)}
+
+.nav-brand{
+  font-family:var(--display);
+  font-size:1.05rem;letter-spacing:.15em;
+  text-decoration:none;color:var(--text);
+  display:flex;align-items:center;gap:.5rem;
+}
+.nav-brand .slash{color:var(--red);font-size:1.4rem;line-height:1}
+.nav-links{display:flex;gap:2.5rem;list-style:none}
+.nav-links a{
+  font-family:var(--mono);font-size:.65rem;letter-spacing:.25em;
+  text-transform:uppercase;color:var(--text3);text-decoration:none;
+  transition:color .3s;
+}
+.nav-links a:hover{color:var(--red2)}
+
+.nav-cta{
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;
+  color:var(--red2);border:1px solid var(--red-dim);
+  padding:.5rem 1.2rem;text-decoration:none;
+  transition:all .3s;
+  clip-path:polygon(6px 0,100% 0,calc(100% - 6px) 100%,0 100%);
+}
+.nav-cta:hover{background:var(--red);color:#fff;border-color:var(--red);box-shadow:var(--glow-r)}
+
+.nav-hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none}
+.nav-hamburger span{display:block;width:22px;height:1.5px;background:var(--text2);transition:.3s}
+@media(max-width:768px){
+  .nav-links,.nav-cta{display:none}
+  .nav-hamburger{display:flex}
+  nav{padding:0 1.5rem}
+}
+
+/* TICKER */
+.ticker-wrap{
+  position:fixed;top:64px;left:0;right:0;z-index:999;
+  background:rgba(229,48,48,.1);
+  border-top:1px solid rgba(229,48,48,.2);
+  border-bottom:1px solid rgba(229,48,48,.2);
+  padding:.4rem 0;overflow:hidden;
+}
+.ticker{
+  display:inline-flex;white-space:nowrap;
+  animation:ticker 28s linear infinite;
+}
+.ticker span{
+  font-family:var(--mono);font-size:.53rem;letter-spacing:.35em;
+  color:var(--red2);padding:0 3rem;
+}
+.ticker span::before{content:'▶ '}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* HERO */
+#hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  position:relative;z-index:2;
+  text-align:center;
+  padding:7rem 2rem 5rem;
+  overflow:hidden;
+}
+.hero-scanlines{
+  position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);
+  pointer-events:none;z-index:0;
+}
+.hero-vignette{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 80% at 50% 50%,transparent 40%,rgba(3,2,2,.85) 100%);
+  pointer-events:none;z-index:0;
+}
+.hero-bottom-grad{
+  position:absolute;bottom:0;left:0;right:0;height:30%;
+  background:linear-gradient(to top,var(--bg),transparent);
+  pointer-events:none;z-index:1;
+}
+.hero-inner{position:relative;z-index:2}
+
+.hero-eyebrow{
+  font-family:var(--mono);font-size:.6rem;letter-spacing:.5em;
+  color:var(--orange);margin-bottom:1.8rem;
+  animation:fadeUp .8s .2s both;
+  display:flex;align-items:center;justify-content:center;gap:1rem;
+}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';display:block;width:30px;height:1px;background:var(--orange)}
+
+.logo-wrap{margin-bottom:.5rem;animation:fadeUp .8s .4s both;line-height:.85}
+.logo-nore{font-family:var(--display);font-size:clamp(5rem,16vw,13rem);letter-spacing:.03em;color:var(--text);display:block}
+.logo-turn{
+  font-family:var(--display);font-size:clamp(5rem,16vw,13rem);letter-spacing:.03em;
+  color:var(--red2);text-shadow:0 0 40px rgba(229,48,48,.6),0 0 100px rgba(229,48,48,.25);
+  display:block;position:relative;animation:glitch 7s infinite;
+}
+.logo-turn::before,.logo-turn::after{content:'TURN';position:absolute;left:0;top:0;width:100%}
+.logo-turn::before{color:#ff0040;animation:glitch-1 7s infinite;clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%)}
+.logo-turn::after{color:#ff6600;animation:glitch-2 7s infinite;clip-path:polygon(0 60%,100% 60%,100% 75%,0 75%)}
+
+@keyframes glitch{0%,88%,100%{text-shadow:0 0 40px rgba(229,48,48,.6),0 0 100px rgba(229,48,48,.25)}89%{text-shadow:-4px 0 var(--red2),4px 0 var(--orange)}90%{text-shadow:4px 0 var(--red2),-4px 0 var(--orange)}91%{text-shadow:none}92%{text-shadow:-2px 0 var(--red2)}93%{text-shadow:0 0 40px rgba(229,48,48,.6)}}
+@keyframes glitch-1{0%,88%,100%{opacity:0;transform:translateX(0)}89%{opacity:.7;transform:translateX(-4px)}91%{opacity:0}}
+@keyframes glitch-2{0%,88%,100%{opacity:0;transform:translateX(0)}90%{opacity:.5;transform:translateX(4px)}92%{opacity:0}}
+
+.studios-label{
+  font-family:var(--mono);font-size:clamp(.6rem,1.5vw,.85rem);
+  letter-spacing:.7em;color:var(--text3);
+  margin-bottom:2.5rem;animation:fadeUp .8s .6s both;
+}
+.hero-tagline{
+  font-family:var(--display);font-size:clamp(1.8rem,5vw,4rem);
+  line-height:1;margin-bottom:.8rem;
+  animation:fadeUp .8s .8s both;
+}
+.hero-tagline .hl{color:transparent;-webkit-text-stroke:1.5px var(--orange)}
+.hero-sub{
+  font-size:1rem;font-weight:300;color:var(--text2);letter-spacing:.15em;
+  margin-bottom:3rem;animation:fadeUp .8s 1s both;
+}
+.btn-row{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;animation:fadeUp .8s 1.2s both}
+.btn{
+  font-family:var(--mono);font-size:.65rem;letter-spacing:.25em;
+  text-transform:uppercase;text-decoration:none;
+  padding:.9rem 2.5rem;position:relative;overflow:hidden;
+  display:inline-flex;align-items:center;gap:.6rem;
+  transition:all .35s;cursor:none;border:none;
+}
+.btn-fire{
+  background:linear-gradient(135deg,var(--red),var(--orange));color:#fff;
+  clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);
+}
+.btn-fire::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--orange),var(--yellow));opacity:0;transition:opacity .4s}
+.btn-fire:hover::before{opacity:1}
+.btn-fire:hover{box-shadow:var(--glow-o);transform:translateY(-2px)}
+.btn-fire span,.btn-ghost span{position:relative;z-index:1}
+.btn-ghost{
+  background:transparent;color:var(--text2);border:1px solid var(--border2);
+  clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);
+}
+.btn-ghost:hover{border-color:var(--red2);color:var(--red2);box-shadow:var(--glow-r);transform:translateY(-2px)}
+
+.scroll-cue{
+  position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:.5rem;z-index:3;
+  animation:fadeUp 1s 2s both;
+}
+.scroll-cue-line{width:1px;height:50px;background:linear-gradient(to bottom,var(--red),transparent);animation:scrollpulse 2s ease-in-out infinite}
+@keyframes scrollpulse{0%,100%{transform:scaleY(.3);opacity:.3}50%{transform:scaleY(1);opacity:1}}
+.scroll-cue-text{font-family:var(--mono);font-size:.5rem;letter-spacing:.4em;color:var(--text3)}
+
+/* SECTIONS */
+section{position:relative;z-index:2}
+.section-inner{max-width:1140px;margin:0 auto;padding:7rem 2rem}
+
+.s-label{
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.45em;
+  color:var(--red);text-transform:uppercase;
+  display:flex;align-items:center;gap:.8rem;margin-bottom:.8rem;
+}
+.s-label::before{content:'';display:block;width:20px;height:1px;background:var(--red)}
+.s-title{font-family:var(--display);font-size:clamp(3rem,8vw,7rem);line-height:.9;margin-bottom:1.5rem;letter-spacing:.01em}
+.rule{width:80px;height:2px;margin-bottom:2.5rem;background:linear-gradient(to right,var(--red),var(--orange));position:relative}
+.rule::after{content:'';position:absolute;right:-6px;top:-3px;width:8px;height:8px;background:var(--orange);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.sdiv{position:relative;z-index:2;height:1px;background:linear-gradient(to right,transparent,var(--red-dim),transparent)}
+
+/* ABOUT */
+#about{background:var(--bg2)}
+.about-layout{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:center}
+.about-body{font-size:1.1rem;line-height:1.9;color:var(--text2);font-weight:300}
+.about-body p{margin-bottom:1.2rem}
+.about-body strong{color:var(--text);font-weight:600}
+.mission-box{border:1px solid var(--border2);border-left:3px solid var(--red);padding:1.5rem 2rem;background:rgba(229,48,48,.04);margin-top:2rem}
+.mission-box .mlabel{font-family:var(--mono);font-size:.55rem;letter-spacing:.4em;color:var(--red);margin-bottom:.5rem}
+.mission-box p{font-size:1rem;line-height:1.7;color:var(--text2);font-weight:300}
+.about-right{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border)}
+.kpi{background:var(--bg2);padding:2rem 1.5rem;position:relative;overflow:hidden;transition:background .3s}
+.kpi:hover{background:var(--surface2)}
+.kpi::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(to right,var(--red),var(--orange));transform:scaleX(0);transition:transform .4s;transform-origin:left}
+.kpi:hover::before{transform:scaleX(1)}
+.kpi-val{font-family:var(--display);font-size:3rem;color:var(--red2);line-height:1;margin-bottom:.4rem}
+.kpi-label{font-family:var(--mono);font-size:.6rem;letter-spacing:.25em;color:var(--text3)}
+
+/* GAME */
+#game{background:var(--bg)}
+.game-layout{display:grid;grid-template-columns:5fr 4fr;gap:4rem;margin-bottom:4rem;align-items:start}
+.game-desc{font-size:1.1rem;line-height:1.9;color:var(--text2);font-weight:300;margin-bottom:1.2rem}
+.tags{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:2rem}
+.tag{font-family:var(--mono);font-size:.55rem;letter-spacing:.2em;border:1px solid var(--border2);color:var(--text3);padding:.3rem .8rem;text-transform:uppercase;transition:all .3s}
+.tag:hover{border-color:var(--orange);color:var(--orange)}
+.game-scene{position:relative;border:1px solid var(--border2);overflow:hidden;background:#050101;height:340px}
+.game-scene canvas{width:100%;height:100%;display:block}
+.scene-caption{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(3,2,2,.95),transparent);padding:1.2rem;pointer-events:none}
+.scene-caption span{font-family:var(--mono);font-size:.52rem;letter-spacing:.3em;color:var(--text3)}
+.game-panels{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border)}
+.panel{background:var(--bg2);padding:2rem 1.8rem;position:relative;overflow:hidden;transition:background .3s}
+.panel:hover{background:var(--surface)}
+.panel-num{font-family:var(--mono);font-size:.55rem;letter-spacing:.3em;color:var(--red-dim);margin-bottom:1.2rem;display:block}
+.panel-icon{font-size:2rem;margin-bottom:1rem;display:block;filter:drop-shadow(0 0 12px rgba(229,48,48,.4))}
+.panel-title{font-family:var(--display);font-size:1.5rem;color:var(--text);margin-bottom:.8rem;letter-spacing:.03em}
+.panel-desc{font-size:.95rem;line-height:1.8;color:var(--text2);font-weight:300}
+.panel-bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(to right,var(--red),var(--orange));transform:scaleX(0);transition:transform .5s;transform-origin:left}
+.panel:hover .panel-bar{transform:scaleX(1)}
+
+/* FEATURES */
+#features{background:var(--bg2)}
+.features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);margin-top:3rem}
+.feat{background:var(--bg2);padding:2.5rem 2rem;display:flex;gap:1.5rem;align-items:flex-start;transition:background .3s;position:relative;overflow:hidden}
+.feat:hover{background:var(--surface)}
+.feat-num{font-family:var(--display);font-size:2.5rem;color:var(--border2);line-height:1;flex-shrink:0;transition:color .3s}
+.feat:hover .feat-num{color:var(--red-dim)}
+.feat-title{font-family:var(--display);font-size:1.4rem;color:var(--text);margin-bottom:.6rem;letter-spacing:.03em}
+.feat-desc{font-size:.95rem;line-height:1.8;color:var(--text2);font-weight:300}
+.feat-line{position:absolute;left:0;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--red),var(--orange));transform:scaleY(0);transition:transform .4s;transform-origin:top}
+.feat:hover .feat-line{transform:scaleY(1)}
+
+/* TEAM */
+#team{background:var(--bg)}
+.team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);margin-top:3rem}
+.member{background:var(--bg2);padding:2.5rem 1.5rem;text-align:center;position:relative;overflow:hidden;transition:background .3s}
+.member:hover{background:var(--surface)}
+.member-avatar{width:72px;height:72px;border-radius:50%;margin:0 auto 1.2rem;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:2rem;background:var(--bg);transition:border-color .3s,box-shadow .3s}
+.member:hover .member-avatar{border-color:var(--red);box-shadow:0 0 20px rgba(229,48,48,.3)}
+.member-name{font-family:var(--display);font-size:1.2rem;color:var(--text);letter-spacing:.05em;margin-bottom:.3rem}
+.member-role{font-family:var(--mono);font-size:.6rem;letter-spacing:.25em;color:var(--orange)}
+.member-glow{position:absolute;bottom:-30px;left:50%;transform:translateX(-50%);width:100px;height:60px;background:var(--red);border-radius:50%;filter:blur(30px);opacity:0;transition:opacity .4s}
+.member:hover .member-glow{opacity:.15}
+
+/* CONTACT */
+#contact{background:var(--bg2)}
+.contact-layout{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
+.contact-left p{font-size:1.1rem;line-height:1.9;color:var(--text2);font-weight:300;margin-bottom:1.5rem}
+.contact-alert{font-family:var(--mono);font-size:.65rem;letter-spacing:.3em;color:var(--red2);border:1px solid rgba(229,48,48,.25);padding:.8rem 1.2rem;background:rgba(229,48,48,.05);display:inline-flex;align-items:center;gap:.6rem;animation:alertblink 2s ease-in-out infinite}
+@keyframes alertblink{0%,100%{border-color:rgba(229,48,48,.25)}50%{border-color:rgba(229,48,48,.6);box-shadow:0 0 20px rgba(229,48,48,.15)}}
+.alert-dot{width:6px;height:6px;background:var(--red2);border-radius:50%;animation:blink 1s ease-in-out infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.social-stack{display:flex;flex-direction:column;gap:2px}
+.soc{display:flex;align-items:center;gap:1.5rem;padding:1.4rem 1.8rem;background:var(--surface);border:1px solid var(--border2);text-decoration:none;color:var(--text);position:relative;overflow:hidden;transition:all .35s;cursor:none}
+.soc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:0;transition:width .4s}
+.soc.disc::before{background:rgba(88,101,242,.12)}
+.soc.tiktok::before{background:rgba(105,201,208,.08)}
+.soc.rb::before{background:rgba(229,48,48,.1)}
+.soc.mail::before{background:rgba(240,112,32,.08)}
+.soc:hover::before{width:100%}
+.soc:hover{border-color:var(--red2);transform:translateX(8px)}
+.soc-icon{font-size:1.4rem;position:relative;z-index:1;flex-shrink:0;width:36px;text-align:center}
+.soc-info{position:relative;z-index:1;flex:1}
+.soc-platform{font-family:var(--mono);font-size:.7rem;letter-spacing:.25em;color:var(--text);display:block;margin-bottom:.15rem}
+.soc-handle{font-size:.9rem;color:var(--text2);font-weight:300}
+.soc-arrow{position:relative;z-index:1;font-family:var(--mono);font-size:.8rem;color:var(--text3);transition:color .3s,transform .3s}
+.soc:hover .soc-arrow{color:var(--red2);transform:translateX(4px)}
+
+/* FOOTER */
+footer{position:relative;z-index:2;background:var(--bg);border-top:1px solid var(--border);padding:2rem 3rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.footer-brand{font-family:var(--display);font-size:.95rem;letter-spacing:.15em;color:var(--text3)}
+.footer-brand span{color:var(--red2)}
+.footer-copy{font-family:var(--mono);font-size:.55rem;letter-spacing:.2em;color:var(--text3)}
+.footer-nav{display:flex;gap:2rem}
+.footer-nav a{font-family:var(--mono);font-size:.55rem;letter-spacing:.2em;color:var(--text3);text-decoration:none;transition:color .3s}
+.footer-nav a:hover{color:var(--red2)}
+
+/* REVEALS */
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .7s,transform .7s}
+.reveal.in{opacity:1;transform:translateY(0)}
+.d1{transition-delay:.1s}.d2{transition-delay:.2s}.d3{transition-delay:.3s}.d4{transition-delay:.4s}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .about-layout,.game-layout,.contact-layout{grid-template-columns:1fr;gap:3rem}
+  .game-panels{grid-template-columns:1fr}
+  .features-grid{grid-template-columns:1fr}
+  .team-grid{grid-template-columns:repeat(2,1fr)}
+  .section-inner{padding:5rem 1.5rem}
+}
+@media(max-width:500px){
+  .btn-row{flex-direction:column;align-items:center}
+  footer{flex-direction:column;text-align:center}
+  .footer-nav{flex-wrap:wrap;justify-content:center}
+  .team-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div id="cursor">
+  <div id="cursor-dot"></div>
+  <div id="cursor-ring"></div>
+</div>
+
+<canvas id="canvas-bg"></canvas>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-brand"><span class="slash">/</span> NoreTurn Studio's</a>
+  <ul class="nav-links">
+    <li><a href="#about">Nosotros</a></li>
+    <li><a href="#game">Just Run</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#team">Equipo</a></li>
+    <li><a href="#contact">Contacto</a></li>
+  </ul>
+  <a href="https://discord.gg/pttMurvdk7" target="_blank" class="nav-cta">⚡ DISCORD</a>
+  <button class="nav-hamburger" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker">
+    <span>ALERTA DE NIVEL MÁXIMO — EL FIN DEL MUNDO COMIENZA</span>
+    <span>JUST RUN — PRÓXIMAMENTE EN ROBLOX</span>
+    <span>NORETURN STUDIO'S — SURVIVA O PERECE</span>
+    <span>ÚNETE A NUESTRO DISCORD AHORA</span>
+    <span>ALERTA DE NIVEL MÁXIMO — EL FIN DEL MUNDO COMIENZA</span>
+    <span>JUST RUN — PRÓXIMAMENTE EN ROBLOX</span>
+    <span>NORETURN STUDIO'S — SURVIVA O PERECE</span>
+    <span>ÚNETE A NUESTRO DISCORD AHORA</span>
+  </div>
+</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-scanlines"></div>
+  <div class="hero-vignette"></div>
+  <div class="hero-bottom-grad"></div>
+
+  <div class="hero-inner">
+    <div class="hero-eyebrow">ROBLOX GAME STUDIO · EST. 2025</div>
+
+    <div class="logo-wrap">
+      <span class="logo-nore">NORE</span>
+      <span class="logo-turn">TURN</span>
+    </div>
+    <p class="studios-label">S &nbsp;T &nbsp;U &nbsp;D &nbsp;I &nbsp;O &nbsp;' &nbsp;S</p>
+
+    <h1 class="hero-tagline">
+      <span class="hl">ESCAPA</span> DEL FIN<br>DEL MUNDO
+    </h1>
+    <p class="hero-sub">Terror · Supervivencia · Escape · Roblox</p>
+
+    <div class="btn-row">
+      <a href="https://www.roblox.com/share/g/205055920" target="_blank" class="btn btn-fire"><span>▶ JUGAR EN ROBLOX</span></a>
+      <a href="https://discord.gg/pttMurvdk7" target="_blank" class="btn btn-ghost"><span>💬 UNIRSE AL DISCORD</span></a>
+    </div>
+  </div>
+
+  <div class="scroll-cue">
+    <div class="scroll-cue-line"></div>
+    <span class="scroll-cue-text">SCROLL</span>
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="section-inner">
+    <div class="about-layout">
+      <div class="reveal">
+        <div class="s-label">001 — Quiénes Somos</div>
+        <h2 class="s-title">SOBRE<br>NOSOTROS</h2>
+        <div class="rule"></div>
+        <div class="about-body">
+          <p>Somos <strong>NoreTurn Studio's</strong>, un equipo pequeño pero completamente dedicado a crear las experiencias más intensas y memorables dentro de Roblox.</p>
+          <p>Nos especializamos en juegos de <strong>supervivencia, terror y escape</strong>. Cada mapa, cada mecánica y cada segundo de juego está diseñado para generarte adrenalina real.</p>
+        </div>
+        <div class="mission-box">
+          <div class="mlabel">// MISIÓN</div>
+          <p>Revolucionar la plataforma Roblox con ideas innovadoras que nadie ha visto. Demostrar que Roblox puede generar experiencias que te pongan los vellos de punta.</p>
+        </div>
+      </div>
+
+      <div class="about-right reveal d2">
+        <div class="kpi">
+          <div class="kpi-val">01</div>
+          <div class="kpi-label">JUEGO EN DESARROLLO</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-val">∞</div>
+          <div class="kpi-label">PASIÓN POR CREAR</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-val">24/7</div>
+          <div class="kpi-label">DEDICACIÓN TOTAL</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-val">100%</div>
+          <div class="kpi-label">IDEAS ORIGINALES</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- GAME -->
+<section id="game">
+  <div class="section-inner">
+    <div class="game-layout">
+      <div class="reveal">
+        <div class="s-label">002 — Nuestro Juego</div>
+        <h2 class="s-title" style="color:var(--red2);text-shadow:var(--glow-r)">JUST<br>RUN</h2>
+        <div class="rule"></div>
+        <p class="game-desc">El apocalipsis ha llegado. No hay tiempo para pensar, solo para <strong style="color:var(--orange)">correr</strong>. Just Run es un juego de supervivencia y escape donde tú y tus amigos deben resolver acertijos bajo presión, evitar enemigos implacables y escapar antes de que el mundo colapse definitivamente.</p>
+        <p class="game-desc">Inspirado en el terror de <strong style="color:var(--text)">Piggy</strong>, pero con nuestra propia oscuridad, mecánicas más profundas y una atmósfera que nunca habías sentido en Roblox.</p>
+        <div class="tags">
+          <span class="tag">Multijugador</span>
+          <span class="tag">Terror</span>
+          <span class="tag">Escape Room</span>
+          <span class="tag">Puzzles</span>
+          <span class="tag">Supervivencia</span>
+          <span class="tag">Roblox</span>
+        </div>
+        <a href="https://www.roblox.com/share/g/205055920" target="_blank" class="btn btn-fire" style="display:inline-flex"><span>▶ VER EN ROBLOX</span></a>
+      </div>
+
+      <div class="reveal d2">
+        <div class="game-scene">
+          <canvas id="scene-canvas"></canvas>
+          <div class="scene-caption">
+            <span>ARTE CONCEPTUAL — JUST RUN · SECTOR 7 COMPROMETIDO</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="game-panels reveal">
+      <div class="panel">
+        <span class="panel-num">// 01</span>
+        <span class="panel-icon">🔥</span>
+        <div class="panel-title">SUPERVIVENCIA</div>
+        <p class="panel-desc">El mundo se está acabando. Cada segundo cuenta. Encuentra los recursos, activa los mecanismos y escapa antes de que todo se derrumbe.</p>
+        <div class="panel-bar"></div>
+      </div>
+      <div class="panel">
+        <span class="panel-num">// 02</span>
+        <span class="panel-icon">👁</span>
+        <div class="panel-title">TERROR PURO</div>
+        <p class="panel-desc">Enemigos que te persiguen, atmósferas opresivas y momentos de pánico real. La oscuridad esconde más de lo que imaginas.</p>
+        <div class="panel-bar"></div>
+      </div>
+      <div class="panel">
+        <span class="panel-num">// 03</span>
+        <span class="panel-icon">🧩</span>
+        <div class="panel-title">PUZZLES & ESCAPE</div>
+        <p class="panel-desc">Resuelve acertijos bajo presión extrema, coopera con tu equipo y descubre los secretos de cada mapa apocalíptico.</p>
+        <div class="panel-bar"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center">
+      <div class="s-label" style="justify-content:center">003 — Lo que nos hace únicos</div>
+      <h2 class="s-title">CARAC-<br>TERÍSTICAS</h2>
+      <div class="rule" style="margin-left:auto;margin-right:auto"></div>
+    </div>
+
+    <div class="features-grid">
+      <div class="feat reveal">
+        <div class="feat-line"></div>
+        <div class="feat-num">01</div>
+        <div class="feat-content">
+          <div class="feat-title">SISTEMA DE ESCAPE</div>
+          <p class="feat-desc">Mecánicas diseñadas para generar adrenalina real. Cada ruta es un desafío, cada salida es una victoria arrancada del apocalipsis.</p>
+        </div>
+      </div>
+      <div class="feat reveal d1">
+        <div class="feat-line"></div>
+        <div class="feat-num">02</div>
+        <div class="feat-content">
+          <div class="feat-title">AMBIENTE INMERSIVO</div>
+          <p class="feat-desc">Iluminación dinámica, audio envolvente y diseño de niveles construido para ponerte los nervios de punta desde el primer segundo.</p>
+        </div>
+      </div>
+      <div class="feat reveal d2">
+        <div class="feat-line"></div>
+        <div class="feat-num">03</div>
+        <div class="feat-content">
+          <div class="feat-title">MULTIJUGADOR INTENSO</div>
+          <p class="feat-desc">¿En quién confías al final del mundo? Coopera con amigos o enfréntate a extraños. La traición puede costarte la vida.</p>
+        </div>
+      </div>
+      <div class="feat reveal d3">
+        <div class="feat-line"></div>
+        <div class="feat-num">04</div>
+        <div class="feat-content">
+          <div class="feat-title">MAPAS ÚNICOS</div>
+          <p class="feat-desc">Ciudades en llamas, laboratorios abandonados, instalaciones militares destruidas. Cada mapa es un escenario del fin del mundo.</p>
+        </div>
+      </div>
+      <div class="feat reveal d1">
+        <div class="feat-line"></div>
+        <div class="feat-num">05</div>
+        <div class="feat-content">
+          <div class="feat-title">ENEMIGOS IMPLACABLES</div>
+          <p class="feat-desc">IA diseñada para acorralarte sin patrones predecibles. Sin tregua. Cada partida es una experiencia completamente diferente.</p>
+        </div>
+      </div>
+      <div class="feat reveal d2">
+        <div class="feat-line"></div>
+        <div class="feat-num">06</div>
+        <div class="feat-content">
+          <div class="feat-title">UPDATES CONSTANTES</div>
+          <p class="feat-desc">El apocalipsis evoluciona. Nuevos mapas, amenazas y secretos ocultos se añaden constantemente. El fin nunca termina.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- TEAM -->
+<section id="team">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center">
+      <div class="s-label" style="justify-content:center">004 — Las mentes detrás del caos</div>
+      <h2 class="s-title">NUESTRO<br>EQUIPO</h2>
+      <div class="rule" style="margin-left:auto;margin-right:auto"></div>
+    </div>
+
+    <div class="team-grid">
+      <div class="member reveal">
+        <div class="member-glow"></div>
+        <div class="member-avatar">🎮</div>
+        <div class="member-name">FUNDADOR</div>
+        <div class="member-role">Director Creativo</div>
+      </div>
+      <div class="member reveal d1">
+        <div class="member-glow"></div>
+        <div class="member-avatar">💻</div>
+        <div class="member-name">SCRIPTER</div>
+        <div class="member-role">Lead Developer</div>
+      </div>
+      <div class="member reveal d2">
+        <div class="member-glow"></div>
+        <div class="member-avatar">🏗️</div>
+        <div class="member-name">BUILDER</div>
+        <div class="member-role">World Designer</div>
+      </div>
+      <div class="member reveal d3">
+        <div class="member-glow"></div>
+        <div class="member-avatar">🎵</div>
+        <div class="member-name">SFX / AUDIO</div>
+        <div class="member-role">Sound Designer</div>
+      </div>
+    </div>
+
+    <p class="reveal" style="text-align:center;margin-top:2.5rem;font-family:var(--mono);font-size:.65rem;letter-spacing:.3em;color:var(--text3)">
+      ¿QUIERES UNIRTE? → <a href="https://discord.gg/pttMurvdk7" target="_blank" style="color:var(--red2);text-decoration:none">CONTACTA EN DISCORD</a>
+    </p>
+  </div>
+</section>
+
+<div class="sdiv"></div>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="section-inner">
+    <div class="contact-layout">
+      <div class="reveal">
+        <div class="s-label">005 — Únete a la comunidad</div>
+        <h2 class="s-title">CONTAC-<br>TO</h2>
+        <div class="rule"></div>
+        <p>¿Quieres saber cuándo lanza Just Run? ¿Tienes ideas? ¿Quieres colaborar? Encuéntranos en nuestras redes y sé parte de la comunidad NoreTurn antes de que sea demasiado tarde.</p>
+        <div class="contact-alert">
+          <span class="alert-dot"></span>
+          EL FIN ESTÁ CERCA — NO TE LO PIERDAS
+        </div>
+      </div>
+
+      <div class="social-stack reveal d2">
+        <a href="https://discord.gg/pttMurvdk7" target="_blank" class="soc disc">
+          <span class="soc-icon">🎮</span>
+          <div class="soc-info">
+            <span class="soc-platform">DISCORD</span>
+            <span class="soc-handle">discord.gg/pttMurvdk7</span>
+          </div>
+          <span class="soc-arrow">→</span>
+        </a>
+        <a href="https://www.tiktok.com/@noreturn_0fi" target="_blank" class="soc tiktok">
+          <span class="soc-icon">📱</span>
+          <div class="soc-info">
+            <span class="soc-platform">TIKTOK</span>
+            <span class="soc-handle">@noreturn_0fi</span>
+          </div>
+          <span class="soc-arrow">→</span>
+        </a>
+        <a href="https://www.roblox.com/share/g/205055920" target="_blank" class="soc rb">
+          <span class="soc-icon">🟥</span>
+          <div class="soc-info">
+            <span class="soc-platform">ROBLOX</span>
+            <span class="soc-handle">NoreTurn Studio's — Just Run</span>
+          </div>
+          <span class="soc-arrow">→</span>
+        </a>
+        <a href="mailto:noreturnstudios.ofi@gmail.com" class="soc mail">
+          <span class="soc-icon">📧</span>
+          <div class="soc-info">
+            <span class="soc-platform">EMAIL</span>
+            <span class="soc-handle">noreturnstudios.ofi@gmail.com</span>
+          </div>
+          <span class="soc-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">Nore<span>Turn</span> Studio's</div>
+  <p class="footer-copy">© 2025 NoreTurn Studio's · Todos los derechos reservados · Roblox Game Studio</p>
+  <nav class="footer-nav">
+    <a href="#about">Nosotros</a>
+    <a href="#game">Just Run</a>
+    <a href="#features">Features</a>
+    <a href="#contact">Contacto</a>
+  </nav>
+</footer>
+
+<script>
+/* ── CURSOR ── */
+const cursorDot = document.getElementById('cursor-dot');
+const cursorRing = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursorDot.style.left = mx + 'px';
+  cursorDot.style.top = my + 'px';
+});
+
+(function animRing() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  cursorRing.style.left = rx + 'px';
+  cursorRing.style.top = ry + 'px';
+  requestAnimationFrame(animRing);
+})();
+
+document.querySelectorAll('a, button, .soc, .panel, .feat, .kpi, .member').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursorRing.style.width = '56px';
+    cursorRing.style.height = '56px';
+    cursorRing.style.borderColor = 'var(--red)';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursorRing.style.width = '36px';
+    cursorRing.style.height = '36px';
+    cursorRing.style.borderColor = 'rgba(229,48,48,.5)';
+  });
+});
+
+/* ── NAV ── */
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', scrollY > 60);
+});
+
+let menuOpen = false;
+function toggleMenu() {
+  menuOpen = !menuOpen;
+  const ul = document.querySelector('.nav-links');
+  if (menuOpen) {
+    ul.style.cssText = 'display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(3,2,2,.98);padding:2rem;border-bottom:1px solid var(--border);gap:1.5rem;z-index:999';
+  } else {
+    ul.style.cssText = '';
+  }
+}
+
+/* ── BACKGROUND CANVAS ── */
+const bgCanvas = document.getElementById('canvas-bg');
+const bgCtx = bgCanvas.getContext('2d');
+function resizeBg() { bgCanvas.width = innerWidth; bgCanvas.height = innerHeight; }
+resizeBg(); window.addEventListener('resize', resizeBg);
+
+const BPARTS = Array.from({length: 130}, () => ({
+  x: Math.random() * bgCanvas.width,
+  y: Math.random() * bgCanvas.height,
+  vx: (Math.random() - .5) * .3,
+  vy: -Math.random() * .7 - .15,
+  r: Math.random() * 2 + .4,
+  a: Math.random(),
+  c: Math.random() > .55 ? '229,48,48' : Math.random() > .5 ? '240,112,32' : '255,180,56',
+  life: Math.random() * 200 + 80,
+  maxLife: 280,
+  i: Math.random() * 1000
+}));
+
+function drawBg() {
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+  const grd = bgCtx.createRadialGradient(bgCanvas.width/2, bgCanvas.height * .85, 0, bgCanvas.width/2, bgCanvas.height * .85, bgCanvas.width * .7);
+  grd.addColorStop(0, 'rgba(70,12,4,.3)');
+  grd.addColorStop(.5, 'rgba(25,4,2,.18)');
+  grd.addColorStop(1, 'rgba(3,2,2,0)');
+  bgCtx.fillStyle = grd; bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+
+  const now = Date.now();
+  BPARTS.forEach((p, i) => {
+    p.x += p.vx + Math.sin(now * .001 + p.i) * .15;
+    p.y += p.vy;
+    p.life--;
+    if (p.life <= 0 || p.y < -10) {
+      p.x = Math.random() * bgCanvas.width;
+      p.y = bgCanvas.height + 5;
+      p.life = p.maxLife;
+      p.vy = -Math.random() * .7 - .15;
+      p.a = Math.random();
+    }
+    const prog = p.life / p.maxLife;
+    const alpha = Math.min(prog * 2, 1) * p.a * .65;
+    bgCtx.beginPath();
+    bgCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    bgCtx.fillStyle = `rgba(${p.c},${alpha})`;
+    bgCtx.fill();
+  });
+  requestAnimationFrame(drawBg);
+}
+drawBg();
+
+/* ── SCENE CANVAS ── */
+const sc = document.getElementById('scene-canvas');
+const sctx = sc.getContext('2d');
+function resizeSc() {
+  const p = sc.parentElement;
+  sc.width = p.offsetWidth;
+  sc.height = p.offsetHeight;
+}
+resizeSc(); window.addEventListener('resize', resizeSc);
+
+const SEMBERS = Array.from({length: 55}, () => ({
+  x: Math.random() * 800, y: Math.random() * 400,
+  vx: (Math.random() - .5) * .6, vy: -Math.random() * 1.4 - .3,
+  r: Math.random() * 2 + .4, a: Math.random(),
+  life: Math.random() * 150 + 50, maxLife: 200, i: Math.random() * 1000
+}));
+
+const FLAMES = Array.from({length: 18}, () => {
+  const bx = Math.random() * 800;
+  return { bx, x: bx, y: 400, vx: (Math.random() - .5) * .9, vy: -Math.random() * 3 - 1,
+    r: Math.random() * 9 + 3, a: 1, life: Math.random() * 60 + 30, maxLife: 80,
+    c: Math.random() > .5 ? '229,48,48' : '240,112,32' };
+});
+
+function drawScene() {
+  const W = sc.width, H = sc.height;
+  if (!W || !H) { requestAnimationFrame(drawScene); return; }
+  sctx.clearRect(0, 0, W, H);
+
+  // Sky
+  const sky = sctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#040101'); sky.addColorStop(.5, '#0e0303'); sky.addColorStop(1, '#1c0404');
+  sctx.fillStyle = sky; sctx.fillRect(0, 0, W, H);
+
+  const now = Date.now();
+
+  // Blood moon
+  const mx2 = W * .8, my2 = H * .22;
+  const mg = sctx.createRadialGradient(mx2, my2, 0, mx2, my2, 90);
+  mg.addColorStop(0, 'rgba(229,48,48,.35)'); mg.addColorStop(1, 'rgba(229,48,48,0)');
+  sctx.fillStyle = mg; sctx.fillRect(0, 0, W, H);
+  [[32,'#2a0707'],[25,'#420b0b'],[19,'#5e1010']].forEach(([r, c]) => {
+    sctx.beginPath(); sctx.arc(mx2, my2, r * (W/800), 0, Math.PI*2);
+    sctx.fillStyle = c; sctx.fill();
+  });
+
+  // Smoke
+  const t = now * .0002;
+  [[W*.15,H*.28,130,50],[W*.48,H*.2,170,55],[W*.78,H*.32,110,42]].forEach(([cx,cy,rw,rh]) => {
+    sctx.beginPath(); sctx.ellipse(cx + Math.sin(t)*8, cy, rw*(W/1100), rh, 0, 0, Math.PI*2);
+    sctx.fillStyle = 'rgba(16,4,4,.72)'; sctx.fill();
+  });
+
+  // Buildings
+  const bw = W/1100;
+  const blds = [
+    [0,.48,58],[28,.38,24],[78,.52,48],[118,.43,34],[138,.33,17],
+    [168,.5,52],[212,.44,38],[238,.34,14],[262,.5,50],[308,.42,36],
+    [332,.3,15],[358,.48,50],[398,.41,40],[418,.32,13],[445,.5,53],
+    [488,.43,35],[508,.33,12],[532,.49,50],[572,.41,38],[596,.3,14],
+    [622,.5,50],[664,.43,35],[686,.34,13],[712,.48,54],[754,.42,38],
+    [776,.31,15],[812,.5,50],[855,.44,38],[883,.35,15],[910,.49,53],
+    [952,.43,36],[978,.33,14],[1005,.5,50],[1048,.44,44]
+  ];
+  sctx.fillStyle = '#0b0202';
+  blds.forEach(([x,yfrac,w]) => sctx.fillRect(x*bw, H*yfrac, w*bw, H*(1-yfrac)));
+
+  // Windows
+  const wins = [[52,.42],[146,.35],[246,.45],[336,.33],[422,.33],[510,.35],[598,.32],[692,.37],[793,.33],[892,.37]];
+  wins.forEach(([wx,wy],i) => {
+    const fl = .4 + .6*Math.sin(now*.0025 + i*1.8);
+    sctx.fillStyle = `rgba(210,90,15,${fl*.65})`;
+    sctx.fillRect(wx*bw, H*wy, 5*bw, 7*(H/400));
+  });
+
+  // Ground glow
+  const gg = sctx.createRadialGradient(W*.5, H, 0, W*.5, H, W*.55);
+  gg.addColorStop(0, 'rgba(160,35,8,.38)'); gg.addColorStop(.5, 'rgba(100,15,4,.14)'); gg.addColorStop(1, 'rgba(0,0,0,0)');
+  sctx.fillStyle = gg; sctx.fillRect(0, 0, W, H);
+
+  // Ground
+  sctx.fillStyle = '#09020202'; sctx.fillRect(0, H*.82, W, H);
+  sctx.fillStyle = '#0a0202'; sctx.fillRect(0, H*.82, W, H);
+  sctx.fillStyle = '#130404'; sctx.fillRect(0, H*.82, W, 4);
+
+  // Embers
+  SEMBERS.forEach((e, i) => {
+    e.x += e.vx + Math.sin(now*.002 + e.i) * .25;
+    e.y += e.vy; e.life--;
+    if (e.life <= 0 || e.y < -10) { e.x = Math.random()*W; e.y = H; e.life = e.maxLife; }
+    const p2 = e.life / e.maxLife;
+    sctx.beginPath(); sctx.arc(e.x, e.y, e.r * (W/800), 0, Math.PI*2);
+    sctx.fillStyle = `rgba(229,80,40,${Math.min(p2*2,1)*e.a*.75})`;
+    sctx.fill();
+  });
+
+  // Flames
+  FLAMES.forEach(f => {
+    f.x += f.vx; f.y += f.vy; f.life--; f.r *= .975; f.a *= .975;
+    if (f.life <= 0 || f.r < .4) {
+      f.x = f.bx = Math.random()*W; f.y = H*.84;
+      f.vx = (Math.random()-.5)*.9; f.vy = -Math.random()*3-1;
+      f.r = Math.random()*9+3; f.a = 1; f.life = f.maxLife;
+    }
+    const fr = f.r * (W/800);
+    sctx.beginPath(); sctx.arc(f.x, f.y, fr*1.5, 0, Math.PI*2);
+    const fg = sctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, fr*2);
+    fg.addColorStop(0, `rgba(255,200,100,${f.a*.85})`);
+    fg.addColorStop(.45, `rgba(${f.c},${f.a*.65})`);
+    fg.addColorStop(1, `rgba(${f.c},0)`);
+    sctx.fillStyle = fg; sctx.fill();
+  });
+
+  // Running figures
+  const ft = now * .003;
+  [[W*.24,H*.76],[W*.29,H*.77]].forEach(([fx, fy], i) => {
+    const bob = Math.sin(ft + i) * 2.5;
+    const leg = Math.sin(ft*2 + i) * 10;
+    const sc2 = H / 400;
+    sctx.save(); sctx.translate(fx, fy + bob); sctx.fillStyle = '#080101';
+    sctx.beginPath(); sctx.arc(0, -42*sc2, 7*sc2, 0, Math.PI*2); sctx.fill();
+    sctx.fillRect(-4*sc2, -33*sc2, 9*sc2, 20*sc2);
+    sctx.beginPath(); sctx.moveTo(0,-28*sc2); sctx.lineTo(16*sc2,(-14+leg)*sc2);
+    sctx.strokeStyle='#080101'; sctx.lineWidth=3*sc2; sctx.stroke();
+    sctx.beginPath(); sctx.moveTo(0,-28*sc2); sctx.lineTo(-14*sc2,(-16-leg*.5)*sc2); sctx.stroke();
+    sctx.beginPath(); sctx.moveTo(0,-10*sc2); sctx.lineTo(10*sc2,(12+leg)*sc2); sctx.stroke();
+    sctx.beginPath(); sctx.moveTo(0,-10*sc2); sctx.lineTo(-9*sc2,(14-leg)*sc2); sctx.stroke();
+    sctx.restore();
+  });
+
+  // HUD text
+  sctx.font = `${W*.0085}px 'Share Tech Mono', monospace`;
+  sctx.fillStyle = 'rgba(229,48,48,.22)';
+  sctx.fillText('⚠ SECTOR 7 — COMPROMETIDO', W*.03, H*.1);
+  sctx.fillStyle = 'rgba(240,112,32,.18)';
+  sctx.fillText('PROTOCOLO DE ESCAPE ACTIVADO', W*.53, H*.87);
+
+  requestAnimationFrame(drawScene);
+}
+drawScene();
+
+/* ── SCROLL REVEAL ── */
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+</script>
+</body>
+</html>
